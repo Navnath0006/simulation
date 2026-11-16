@@ -1,0 +1,528 @@
+/* Foot & Mouth Disease module. Loaded with the lazy FMD chunk. */
+
+.fmd-header {
+  display: flex;
+  gap: 22px;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.fmd-header h1 {
+  font-size: 32px;
+  margin-block: 6px 8px;
+}
+
+.fmd-header p:last-child {
+  font-size: 13px;
+  color: var(--muted);
+  max-width: 720px;
+}
+
+.fmd-scope {
+  margin-bottom: 18px;
+}
+
+.fmd-tabs {
+  display: flex;
+  gap: 6px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 22px;
+}
+
+.fmd-tabs a {
+  padding: 10px 14px;
+  font-size: 13px;
+  font-weight: 650;
+  color: var(--muted);
+  border-bottom: 3px solid transparent;
+  margin-bottom: -1px;
+}
+
+.fmd-tabs a:hover {
+  color: var(--purple);
+}
+
+.fmd-tabs a[aria-current="page"] {
+  color: var(--purple);
+  border-bottom-color: var(--purple);
+}
+
+.fmd-workspace {
+  display: grid;
+  grid-template-columns: minmax(300px, 360px) minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+
+.fmd-panel {
+  position: sticky;
+  top: 12px;
+  max-height: calc(100vh - 24px);
+  overflow: auto;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.fmd-panel-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.fmd-panel-head h2 {
+  font-size: 18px;
+}
+
+.fmd-panel-head .button {
+  min-height: 36px;
+  padding: 8px 12px;
+}
+
+.fmd-group {
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  padding: 10px 12px;
+  margin: 0 0 10px;
+}
+
+.fmd-group legend,
+.fmd-group summary {
+  font-size: 12px;
+  font-weight: 750;
+  color: var(--purple-dark);
+  padding: 0 4px;
+}
+
+.fmd-group summary {
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.fmd-group[open] summary {
+  margin-bottom: 8px;
+}
+
+.fmd-field {
+  display: grid;
+  gap: 4px;
+  margin-bottom: 11px;
+}
+
+.fmd-field label {
+  font-size: 12px;
+  font-weight: 650;
+  color: #2f2a3a;
+}
+
+.fmd-unit {
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.fmd-field input,
+.fmd-field select {
+  font: inherit;
+  font-size: 13px;
+  width: 100%;
+  min-height: 36px;
+  padding: 6px 9px;
+  border: 1px solid #cfc9d9;
+  border-radius: 6px;
+  background: #fff;
+  color: inherit;
+}
+
+.fmd-field small {
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--muted);
+}
+
+.fmd-field.has-error input {
+  border-color: #b42318;
+  background: #fff7f6;
+}
+
+.fmd-field small.fmd-error {
+  color: #b42318;
+  font-weight: 650;
+}
+
+.fmd-error-badge {
+  font-size: 10px;
+  font-weight: 700;
+  color: #b42318;
+  background: #fff1f0;
+  border-radius: 4px;
+  padding: 2px 6px;
+}
+
+.fmd-derived {
+  font-size: 12px;
+  color: #3f3a4b;
+  background: #f7f5fa;
+  border-radius: 6px;
+  padding: 7px 9px;
+  margin-bottom: 10px;
+}
+
+select:focus-visible,
+summary:focus-visible {
+  outline: 3px solid #9d72db;
+  outline-offset: 3px;
+}
+
+.fmd-results {
+  display: grid;
+  gap: 18px;
+  min-width: 0;
+}
+
+.fmd-status {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.fmd-warnings {
+  margin: 0;
+  padding: 12px 16px 12px 30px;
+  border: 1px solid #f0c8a8;
+  border-radius: 8px;
+  background: #fff8f1;
+  color: #7a3d0e;
+  font-size: 12px;
+}
+
+.fmd-kpis {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0;
+}
+
+.fmd-kpi {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-left: 4px solid #8f7bb0;
+  border-radius: 10px;
+  padding: 13px 15px;
+}
+
+.fmd-kpi.tone-alert {
+  border-left-color: #c2410c;
+}
+
+.fmd-kpi.tone-good {
+  border-left-color: #15803d;
+}
+
+.fmd-kpi dt {
+  font-size: 11px;
+  font-weight: 650;
+  color: var(--muted);
+}
+
+.fmd-kpi dd {
+  margin: 6px 0 0;
+  display: grid;
+  gap: 4px;
+}
+
+.fmd-kpi-value {
+  font-size: 24px;
+  font-weight: 750;
+  letter-spacing: -0.02em;
+  color: #1e1a26;
+}
+
+.fmd-kpi-note {
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.fmd-card {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 18px 20px;
+  min-width: 0;
+}
+
+.fmd-card h2 {
+  font-size: 18px;
+  margin-bottom: 10px;
+}
+
+.fmd-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.fmd-check {
+  display: inline-flex;
+  gap: 7px;
+  align-items: center;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.fmd-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.fmd-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 5px 9px;
+  border-radius: 999px;
+  border: 1px solid #d9d4e3;
+  background: #fff;
+  color: #3f3a4b;
+}
+
+.fmd-legend-item[aria-pressed="false"] {
+  opacity: 0.5;
+  text-decoration: line-through;
+}
+
+.fmd-chart {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.fmd-axis-label {
+  font-size: 11px;
+  fill: #6b6577;
+}
+
+.fmd-axis-title {
+  font-size: 12px;
+  font-weight: 650;
+  fill: #4b4558;
+}
+
+.fmd-cursor-label {
+  font-size: 11px;
+  font-weight: 700;
+  fill: var(--purple);
+}
+
+.fmd-cursor {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+  margin-top: 10px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.fmd-cursor input[type="range"] {
+  flex: 1 1 220px;
+  accent-color: var(--purple);
+}
+
+.fmd-cursor output {
+  min-width: 64px;
+  font-variant-numeric: tabular-nums;
+}
+
+.fmd-cursor .button {
+  min-height: 34px;
+  padding: 7px 12px;
+}
+
+.fmd-day-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 22px;
+  font-size: 12px;
+  margin-bottom: 14px;
+}
+
+.fmd-table-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.fmd-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.fmd-table caption {
+  text-align: left;
+  font-weight: 750;
+  font-size: 12px;
+  color: var(--purple-dark);
+  padding-bottom: 6px;
+}
+
+.fmd-table th,
+.fmd-table td {
+  padding: 6px 8px;
+  border-bottom: 1px solid #efecf3;
+  text-align: left;
+}
+
+.fmd-table thead th {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
+.fmd-table tbody th {
+  font-weight: 500;
+}
+
+.fmd-table td {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.fmd-symbol {
+  font-size: 10px;
+  color: #8a8496;
+  font-family: ui-monospace, Consolas, monospace;
+}
+
+.fmd-facts {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin: 12px 0 0;
+}
+
+.fmd-facts div {
+  background: #f9f8fb;
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+
+.fmd-facts dt {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.fmd-facts dd {
+  margin: 4px 0 0;
+  font-size: 17px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.fmd-muted {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.fmd-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.fmd-model {
+  display: grid;
+  gap: 18px;
+}
+
+.fmd-model p {
+  font-size: 13px;
+  max-width: 900px;
+}
+
+.fmd-model p + p {
+  margin-top: 10px;
+}
+
+.fmd-equations {
+  font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+  font-size: 12px;
+  line-height: 1.7;
+  background: #f7f5fa;
+  border-radius: 8px;
+  padding: 14px 16px;
+  overflow-x: auto;
+  margin: 10px 0 0;
+}
+
+.fmd-list {
+  font-size: 13px;
+  line-height: 1.65;
+  padding-left: 20px;
+  margin: 8px 0 0;
+}
+
+.fmd-list li + li {
+  margin-top: 6px;
+}
+
+.fmd-constants {
+  margin-top: 16px;
+  max-width: 640px;
+}
+
+.loading-note {
+  font-size: 13px;
+  color: var(--muted);
+  padding: 40px 0;
+}
+
+@media (max-width: 1100px) {
+  .fmd-kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .fmd-facts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 1000px) {
+  .fmd-workspace {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .fmd-panel {
+    position: static;
+    max-height: none;
+  }
+}
+
+@media (max-width: 620px) {
+  .fmd-header {
+    align-items: flex-start;
+  }
+  .fmd-header h1 {
+    font-size: 26px;
+  }
+  .fmd-kpis,
+  .fmd-facts,
+  .fmd-table-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .fmd-card {
+    padding: 14px;
+  }
+}

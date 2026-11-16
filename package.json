@@ -2,7 +2,7 @@
   "name": "simulation",
   "private": true,
   "version": "0.1.0",
-  "description": "React portal interface for ICAR-NIVEDI. Scientific simulation engines are not included.",
+  "description": "React portal interface for ICAR-NIVEDI with the Foot & Mouth Disease ODE simulator. Other scientific simulation engines are not included.",
   "type": "module",
   "engines": {
     "node": ">=22.12.0"

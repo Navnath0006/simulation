@@ -4,16 +4,26 @@ Checked locally on 16 November 2026 using Node.js 22.19.0.
 
 | Check | Result |
 | --- | --- |
-| TypeScript and production build | Passed with `npm run build` |
-| Automated tests | 13 passed across route, catalogue, and DOM interface checks |
-| Dependency audit | Zero known vulnerabilities reported by `npm audit` at review time |
+| TypeScript and production build | Passed with `npm run build`; the FMD module is a separate lazily loaded chunk |
+| Automated tests | 50 passed across route, catalogue, DOM interface, FMD engine parity and FMD interface checks |
+| Dependency audit | Zero known vulnerabilities reported by `npm audit`; no dependencies were added |
+| FMD engine parity | Bit-identical to the legacy page in 7 scenarios and 3 vaccination-impact comparisons (see below) |
+| Browser check under the production CSP | The built site was served with the security headers of `deploy/nginx.conf` and opened in headless Chrome 157: no script errors, CSP violations or failed requests on the home, FMD simulator and FMD model pages; default results, input changes, invalid input, a 3,650-day run and reset behaved as expected; desktop and 412-px-wide layouts inspected |
 | Build asset references | Entry assets and all six team portraits present |
 | Release file inventory | No PHP, SQL, spreadsheets, scientific data exports, or secret files in `dist/` |
-| Local HTTP | Home, logo, and a representative portrait returned HTTP 200 |
-| Peer review | Same-route mobile-menu focus defect corrected and covered by a regression test |
-| Visual browser inspection | Unavailable because the browser access host was unavailable |
 | Docker execution | Not tested; Docker is not installed on the local machine |
 
-DOM tests use a simulated browser environment. They do not establish real-device layout, full accessibility conformance, or production server behavior. The nginx configuration has been reviewed but not executed here. GitHub Pages does not use that nginx configuration.
+## FMD simulator against the legacy page
 
-These checks cover only the informational React portal. No scientific engines were ported, executed, or validated. No feedback submissions or emails were sent, and no database is involved.
+`tests/fixtures/fmd-legacy-golden.json` holds reference values captured from the legacy `fmd_simulation.php` (13 November 2026) running in headless Chrome. `tools/capture-fmd-legacy-fixtures.mjs` regenerates it from a running legacy site; a second capture produced identical values.
+
+`tests/fmd-engine.test.ts` checks that:
+
+- the default form produces exactly the parameter object that the legacy `runSimulation()` passes to its engine;
+- in seven scenarios — district defaults (50 days); farm level in November with vaccination and a clamped environmental factor (180 days); district level in September (365 days); state level in January with population-conserving initial values (200 days); no infected animals at day 0 (120 days); a 3,650-day horizon; and district level in April with vaccination of buffalo, pigs and sheep/goats and other non-default rates (240 days) — every compared value of 15 output series equals the legacy value (largest relative difference 0), as do the seasonal factor, R₀, initial susceptibles and F_env;
+- the dashboard's R₀ (1.8875), herd-immunity threshold (47%), environmental factor (1.676) and every daily value of the vaccination-impact series match, including 3,283 cattle infections averted;
+- the vaccination-impact comparisons (no vaccination, day-0 stock only, current settings) also match every daily value at farm and state level.
+
+Matching the legacy page shows that the port is faithful. It is not a scientific validation of the model against field data.
+
+DOM tests use a simulated browser environment. The headless-browser check above does not establish real-device behaviour, full accessibility conformance, or production server behaviour. GitHub Pages does not use the nginx configuration. No feedback submissions or emails were sent, and no database is involved.

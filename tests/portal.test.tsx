@@ -36,14 +36,16 @@ describe("React portal interface", () => {
         .getAttribute("aria-expanded"),
     ).toBe("false");
   });
-  it("shows scope accurately and has no feedback or simulation runner", () => {
+  it("shows scope accurately and has no feedback form or embedded legacy page", () => {
     render(<App />);
     expect(screen.getByRole("heading", { level: 1 }).textContent).toContain(
       "disease research",
     );
-    expect(screen.getByLabelText("Availability").textContent).toContain(
-      "engines are not included",
+    const availability = screen.getByLabelText("Availability").textContent;
+    expect(availability).toContain(
+      "Foot & Mouth Disease simulator is available",
     );
+    expect(availability).toContain("engines are not included");
     expect(screen.queryByRole("link", { name: /feedback/i })).toBeNull();
     expect(document.querySelector("iframe, form")).toBeNull();
   });
@@ -75,11 +77,11 @@ describe("React portal interface", () => {
     render(<App />);
     expect(screen.getByRole("status").textContent).toContain("2 entries");
   });
-  it("shows module availability rather than a fabricated result", () => {
-    window.history.replaceState({}, "", "/#/modules/fmd");
+  it("shows availability rather than a fabricated result for modules without a simulator", () => {
+    window.history.replaceState({}, "", "/#/modules/asf");
     render(<App />);
     expect(
-      screen.getByRole("heading", { level: 1, name: "Foot & Mouth Disease" }),
+      screen.getByRole("heading", { level: 1, name: "African Swine Fever" }),
     ).toBeDefined();
     expect(
       screen.getByRole("heading", {
@@ -87,6 +89,18 @@ describe("React portal interface", () => {
       }),
     ).toBeDefined();
     expect(screen.queryByRole("button", { name: /run/i })).toBeNull();
+    expect(screen.queryByLabelText("Simulation parameters")).toBeNull();
+  });
+  it("labels only the FMD card as a simulator in the directory", () => {
+    window.history.replaceState({}, "", "/#/modules");
+    render(<App />);
+    const cards = document.querySelectorAll<HTMLAnchorElement>(".module-card");
+    const simulators = [...cards].filter((card) =>
+      card.textContent?.includes("Open simulator"),
+    );
+    expect(simulators.map((card) => card.getAttribute("href"))).toEqual([
+      "#/modules/fmd",
+    ]);
   });
   it("handles hash navigation and an unknown module", () => {
     render(<App />);
