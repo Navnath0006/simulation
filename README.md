@@ -1,10 +1,10 @@
 # Simulation portal
 
-A standalone React 19, TypeScript, and Vite 8 frontend for the informational portal. It provides the home page, a searchable module catalogue, and team/contact information.
+A standalone React 19, TypeScript, and Vite 8 frontend for the portal. It provides the home page, a searchable module catalogue, team/contact information, and the **Foot & Mouth Disease (FMD) ODE simulator**.
 
-**This is a partial portal migration, not a full conversion of the legacy simulations.** Catalogue entries describe modules; they do not execute scientific simulations. Scientific engines, datasets, manuscripts, and legacy embedded pages are not part of this repository. See [migration status](docs/MIGRATION_STATUS.md).
+**This is a partial migration, not a full conversion of the legacy simulations.** The FMD simulator is a TypeScript port of the core engine of the legacy `fmd_simulation.php`, tested to give identical results; several legacy FMD panels and the other FMD pages are not migrated yet. Other catalogue entries describe modules and do not execute simulations. Datasets, manuscripts, and legacy embedded pages are not part of this repository. See [migration status](docs/MIGRATION_STATUS.md).
 
-The app has no feedback form, backend, database, server credentials, iframe integration, or legacy proxy. The production output is static files in `dist/`.
+The app has no feedback form, backend, database, server credentials, iframe integration, or legacy proxy. Simulations run in the browser. The production output is static files in `dist/`.
 
 ## Develop and verify
 
@@ -34,9 +34,11 @@ The repository includes a non-root nginx container and a manual GitHub Pages wor
 
 ## Main files
 
-- `src/`: React portal source and informational catalogue.
+- `src/`: React portal source and catalogue.
+- `src/fmd/`: FMD simulator — `engine.ts` (model equations, R₀, vaccination impact), `model.ts` (form fields, defaults, parameter assembly, CSV export) and the React views.
 - `public/`: local assets copied to the static build.
-- `tests/`: automated portal checks.
+- `tests/`: automated checks, including FMD parity tests against `tests/fixtures/fmd-legacy-golden.json`.
+- `tools/capture-fmd-legacy-fixtures.mjs`: optional; regenerates the FMD reference values from a running legacy site with headless Chrome (`node tools/capture-fmd-legacy-fixtures.mjs [legacy-url]`). Not used by CI.
 - `.github/workflows/`: validation and optional manual Pages deployment.
 - `deploy/`: nginx configuration and packaging for an existing build artifact.
 

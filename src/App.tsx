@@ -1,4 +1,12 @@
-import { Component, useEffect, useRef, useState, type ReactNode } from "react";
+import {
+  Component,
+  Suspense,
+  lazy,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import {
   groups,
   modules,
@@ -8,13 +16,23 @@ import {
   type PortalModule,
 } from "./data/modules";
 import { people, contact, type Team } from "./data/people";
-import { assetUrl, parseRoute, type Route } from "./navigation";
+import {
+  assetUrl,
+  moduleViews,
+  parseRoute,
+  type ModuleView,
+  type Route,
+} from "./navigation";
+
+// Loaded on demand so the portal pages do not download the simulation engine.
+const FmdModule = lazy(() => import("./fmd/FmdModule"));
 
 function Arrow({ external = false }: { external?: boolean }) {
   return <span aria-hidden="true">{external ? "↗" : "→"}</span>;
 }
 
 function ModuleCard({ entry }: { entry: PortalModule }) {
+  const runnable = moduleViews(entry.id).includes("simulator");
   return (
     <a
       className={`module-card group-${entry.group}`}
@@ -28,7 +46,10 @@ function ModuleCard({ entry }: { entry: PortalModule }) {
       <h3>{entry.name}</h3>
       <p>{entry.description}</p>
       <span className="card-footer">
-        View information <span className="quiet-badge">Directory</span>
+        {runnable ? "Open simulator" : "View information"}{" "}
+        <span className="quiet-badge">
+          {runnable ? "Simulator" : "Directory"}
+        </span>
       </span>
     </a>
   );
@@ -41,8 +62,9 @@ function AvailabilityNotice() {
         i
       </span>
       <p>
-        <strong>Directory and contact information are available.</strong>{" "}
-        Scientific simulation engines are not included in this version.
+        <strong>The Foot &amp; Mouth Disease simulator is available.</strong>{" "}
+        Other modules are directory entries; their simulation engines are not
+        included in this version.
       </p>
     </aside>
   );
@@ -218,9 +240,21 @@ function DirectoryPage({
   );
 }
 
-function ModulePage({ id }: { id: string }) {
+function ModulePage({ id, view }: { id: string; view?: ModuleView }) {
   const entry = findModule(id);
   if (!entry) return <NotFoundPage />;
+  if (id === "fmd")
+    return (
+      <Suspense
+        fallback={
+          <p className="loading-note" role="status">
+            Loading the simulator…
+          </p>
+        }
+      >
+        <FmdModule view={view === "model" ? "model" : "simulator"} />
+      </Suspense>
+    );
   return (
     <>
       <a className="back-link" href="#/modules">
@@ -451,7 +485,11 @@ export default function App() {
       "not-found": "Page not found",
     };
     const title =
-      route.page === "module" ? findModule(route.id)?.name : titles[route.page];
+      route.page === "module"
+        ? route.id === "fmd"
+          ? `${findModule(route.id)?.name} ${route.view === "model" ? "model" : "simulator"}`
+          : findModule(route.id)?.name
+        : titles[route.page];
     document.title = `${title || "Portal"} | ICAR-NIVEDI`;
   }, [route]);
   useEffect(() => {
@@ -551,7 +589,9 @@ export default function App() {
           {route.page === "modules" && (
             <DirectoryPage key={group} initialGroup={group} />
           )}
-          {route.page === "module" && <ModulePage id={route.id} />}
+          {route.page === "module" && (
+            <ModulePage id={route.id} view={route.view} />
+          )}
           {route.page === "team" && <TeamPage />}
           {route.page === "contact" && <ContactPage />}
           {route.page === "not-found" && <NotFoundPage />}

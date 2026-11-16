@@ -38,6 +38,50 @@ describe("portal routes", () => {
     expect(parseRoute("#/team", "?d=fmd")).toEqual({ page: "team" });
     expect(parseRoute("#/", "?d=fmd")).toEqual({ page: "home" });
   });
+  it("routes the FMD simulator views and rejects views elsewhere", () => {
+    expect(parseRoute("#/modules/fmd/simulator")).toEqual({
+      page: "module",
+      id: "fmd",
+      view: "simulator",
+    });
+    expect(parseRoute("#/modules/fmd/model/")).toEqual({
+      page: "module",
+      id: "fmd",
+      view: "model",
+    });
+    for (const hash of [
+      "#/modules/asf/model",
+      "#/modules/fmd/unknown",
+      "#/modules/fmd/constructor",
+      "#/modules/fmd/__proto__",
+      "#/modules/fmd/model/extra",
+    ])
+      expect(parseRoute(hash)).toEqual({ page: "not-found" });
+  });
+  it("maps legacy dashboard views to the FMD views", () => {
+    expect(parseRoute("", "?d=fmd&v=guide")).toEqual({
+      page: "module",
+      id: "fmd",
+      view: "model",
+    });
+    expect(parseRoute("", "?d=fmd&v=theory")).toEqual({
+      page: "module",
+      id: "fmd",
+      view: "model",
+    });
+    expect(parseRoute("", "?d=fmd&v=pde")).toEqual({
+      page: "module",
+      id: "fmd",
+    });
+    expect(parseRoute("", "?d=fmd&v=__proto__")).toEqual({
+      page: "module",
+      id: "fmd",
+    });
+    expect(parseRoute("", "?d=asf&v=guide")).toEqual({
+      page: "module",
+      id: "asf",
+    });
+  });
 });
 describe("public module directory", () => {
   it("filters by search and group together without mutating the registry", () => {

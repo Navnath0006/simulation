@@ -1,6 +1,6 @@
 # Deployment
 
-The deployable product is the informational React portal described in [migration status](MIGRATION_STATUS.md). It contains no runnable scientific engines, feedback service, backend, or database. Node.js is needed to build it; the resulting site needs only a static file server.
+The deployable product is the React portal described in [migration status](MIGRATION_STATUS.md), including the Foot & Mouth Disease simulator, which runs entirely in the visitor's browser. It contains no other scientific engines, feedback service, backend, or database. Node.js is needed to build it; the resulting site needs only a static file server.
 
 ## Static files or a CI artifact
 
@@ -62,4 +62,4 @@ Workflow actions are pinned to full commit SHAs verified against their official 
 
 ## Deployment checks
 
-After choosing a host, verify the home page, catalogue search, team/contact navigation, and browser refresh on a hash route. Confirm a missing asset returns HTTP 404, inspect the browser console for blocked or missing resources, and check the deployed build matches the intended commit. These checks cover the informational portal only.
+After choosing a host, verify the home page, catalogue search, team/contact navigation, and browser refresh on a hash route. Open `#/modules/fmd` and confirm the simulator loads (its code is a separate file under `assets/`) and shows R₀ 1.8875 with the default inputs, then open `#/modules/fmd/model`. Confirm a missing asset returns HTTP 404, inspect the browser console for blocked or missing resources, and check the deployed build matches the intended commit.
