@@ -38,15 +38,21 @@ The React page shows R₀, the herd-immunity threshold, peak infection, vaccinat
 
 Form defaults reproduce the legacy dashboard at district level. In the legacy page, exposed cattle (E_C), asymptomatic cattle (I_C1) and D_C are read-only values derived by calculators that are not migrated; here they are entered directly, starting from the legacy defaults. Changing the level does not load the legacy level presets.
 
+### Differences from the legacy page
+
+- **Total population N.** This page always uses NC + Nb + Np + NSG, which is the legacy value when the legacy page first loads. The legacy N is an editable field: after any population or day-0 infected/exposed count is edited, `recalcNFromSpecies()` resets it to Σ max(0, population − day-0 exposed/infected animals) (the state data loader always uses that form). R₀ and the results then differ slightly — about 0.03% with the defaults, more than 10% for small herds. The modelling team should decide which definition is intended.
+- **Input limits.** Day-0 animal counts must be whole numbers (the legacy page rounds them). Rates are limited to 20 per day and the coefficients γ₁, γ₂, α_C1 and χ₁ to 1, so one Euler sub-step cannot move more animals out of a compartment than it holds (the legacy page has no upper limits). After every run a numerical check flags non-finite values or a host total that grows beyond its day-0 total plus inflows — possible with very small buffalo, pig or sheep/goat populations — and the page then marks the results as not reliable.
+
 ### Legacy behaviours kept for parity
 
 These are reproduced unchanged so results match the legacy page. They are listed on the model page and should be reviewed with the modelling team before the model is changed:
 
-- R₀ treats zero inputs as their defaults (for example β_C = 0 is calculated as 0.26), divides susceptible cattle by the total population of all species, and leaves out pigs and sheep/goats.
-- Fixed day-0 values: Q_C = 1, q_C = 416, V_P = R_P = 1, V_S = 3, R_S = 8, and 2% of susceptible buffalo exposed even with no infected animals.
+- R₀ treats zero inputs as their defaults (for example β_C = 0 is calculated as 0.26), divides day-0 susceptible cattle by the total population N of all species, and leaves out pigs and sheep/goats.
+- At farm and district level, fixed day-0 values: Q_C = 1, q_C = 416, V_P = R_P = 1, V_S = 3, R_S = 8 (state level starts Q_C, q_C, R_P and R_S at 0 and V_P, V_S at the entered values). At every level 2% of susceptible buffalo are exposed even with no infected animals.
 - At district level V_C2 is counted both as vaccinated and as recovered at day 0.
-- Some vaccinated-compartment outflows leave the model, and clipping at zero after every Euler sub-step does not conserve animals.
+- Some outflows leave the model: δ_P, δ_S, α_B1 and χ_B from vaccinated compartments, and at farm level also θ·R_C, K₁·Q_C, α_C3·V_C1 and χ₂·V_C2 (which return animals to S_C at other levels). Clipping at zero after every Euler sub-step does not conserve animals.
 - Empty buffalo, pig or sheep/goat populations are replaced by 19,644, 7,102 or 278,051 in transmission denominators.
+- The environmental response names 20 °C, 60% humidity and pH 7 as optima, but its formula x²·√(x_max − x) is largest at 48 °C, 80% and pH 11.2.
 - The legacy "Model Architecture" page shows equations that differ from the implemented code.
 
 ### Not migrated yet

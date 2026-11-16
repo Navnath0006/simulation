@@ -5,10 +5,12 @@ Checked locally on 16 November 2026 using Node.js 22.19.0.
 | Check | Result |
 | --- | --- |
 | TypeScript and production build | Passed with `npm run build`; the FMD module is a separate lazily loaded chunk |
-| Automated tests | 50 passed across route, catalogue, DOM interface, FMD engine parity and FMD interface checks |
+| Automated tests | 59 passed across route, catalogue, DOM interface, FMD engine parity, numerical-check and FMD interface checks |
 | Dependency audit | Zero known vulnerabilities reported by `npm audit`; no dependencies were added |
 | FMD engine parity | Bit-identical to the legacy page in 7 scenarios and 3 vaccination-impact comparisons (see below) |
-| Browser check under the production CSP | The built site was served with the security headers of `deploy/nginx.conf` and opened in headless Chrome 157: no script errors, CSP violations or failed requests on the home, FMD simulator and FMD model pages; default results, input changes, invalid input, a 3,650-day run and reset behaved as expected; desktop and 412-px-wide layouts inspected |
+| Browser check under the production CSP | The built site was served with the security headers of `deploy/nginx.conf` and opened in headless Chrome 157: no script errors, CSP violations or failed requests on the home, FMD simulator and FMD model pages; default results, input changes, invalid input, a 3,650-day run, the numerical-instability alert and reset behaved as expected; native mouse-wheel input no longer changes a focused number field; with 412 × 915 device emulation the chart text renders at 11 px and the "Show results" button reaches the results |
+| Pages sub-path build | Built with `BASE_PATH=/simulation/` and served under `/simulation/`: the FMD chunk loads and the simulator shows R₀ 1.8875 |
+| Peer review | Portal: same-route mobile-menu focus defect corrected and covered by a regression test. FMD port: independent engine-fidelity and UI/accessibility reviews; their findings (input limits and a numerical check, whole-number day-0 counts, environment wording, mouse-wheel edits, phone layout and chart legibility, live-region noise, contrast, colour-only series, label and documentation accuracy) were fixed or documented, with tests |
 | Build asset references | Entry assets and all six team portraits present |
 | Release file inventory | No PHP, SQL, spreadsheets, scientific data exports, or secret files in `dist/` |
 | Docker execution | Not tested; Docker is not installed on the local machine |
