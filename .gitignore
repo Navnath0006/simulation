@@ -1,0 +1,17 @@
+node_modules/
+dist/
+coverage/
+.env
+.env.*
+!.env.example
+*.local
+*.log
+*.pem
+*.key
+*.pfx
+*.p12
+.npmrc
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

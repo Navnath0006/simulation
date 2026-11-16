@@ -1,0 +1,10 @@
+# Build from a verified CI artifact extracted into dist/ at the repository root.
+FROM nginx:stable-alpine@sha256:901e593c95dc85f5a729f5765516321366ef4ac401821431d408897e95287d0a
+COPY deploy/nginx.conf /etc/nginx/nginx.conf
+COPY dist /srv/www
+USER nginx
+EXPOSE 8080
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD wget -q --spider http://127.0.0.1:8080/ || exit 1
+ENTRYPOINT ["nginx"]
+CMD ["-g", "daemon off;"]

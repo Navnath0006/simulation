@@ -1,0 +1,7 @@
+# Only runtime files are needed when packaging an existing CI build.
+**
+!dist/
+!dist/**
+!deploy/
+!deploy/nginx.conf
+!deploy/Dockerfile.artifact
