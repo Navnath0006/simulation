@@ -237,4 +237,75 @@ describe("FMD simulator", () => {
       { timeout: 8000 },
     );
   });
+
+  it("keeps the status region quiet for short runs and accurate while a value is invalid", async () => {
+    await openSimulator();
+    const status = () => screen.getByRole("status").textContent;
+    setValue(/Cattle transmission rate/, "0.3");
+    expect(status()).not.toBe("Updating results…");
+    setValue(/Cattle transmission rate/, "");
+    expect(status()).toBe(
+      "1 value needs correction. Results shown are for district level, 50 days.",
+    );
+  });
+
+  it("stops a mouse wheel from changing a focused number field", async () => {
+    await openSimulator();
+    const field = screen.getByLabelText(/Cattle vaccination rate/);
+    field.focus();
+    expect(document.activeElement).toBe(field);
+    fireEvent.wheel(field, { deltaY: 100 });
+    expect(document.activeElement).not.toBe(field);
+    expect((field as HTMLInputElement).value).toBe("0.09");
+  });
+
+  it("marks results as not reliable when the numerical check fails", async () => {
+    await openSimulator();
+    expect(screen.queryByRole("alert")).toBeNull();
+    setValue("Buffalo", "1");
+    setValue("Infected buffalo (I_B)", "0");
+    setValue(/Buffalo transmission rate/, "10");
+    expect((await screen.findByRole("alert")).textContent).toContain(
+      "These results are not reliable.",
+    );
+    expect(screen.getByText(/the buffalo total .* exceeds/)).toBeDefined();
+  });
+
+  it("names the chart by its title and describes it separately", async () => {
+    await openSimulator();
+    const chart = screen.getByRole("img", {
+      name: "Simulated FMD epidemic curves",
+    });
+    const description = document.getElementById(
+      chart.getAttribute("aria-describedby") ?? "",
+    );
+    expect(description?.textContent).toMatch(/^7 series over 50 days/);
+  });
+
+  it("opens fewer parameter groups on narrow screens", async () => {
+    const original = window.matchMedia;
+    window.matchMedia = ((query: string) => ({
+      matches: query === "(max-width: 1000px)",
+      media: query,
+      onchange: null,
+      addListener: () => {},
+      removeListener: () => {},
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      dispatchEvent: () => false,
+    })) as typeof window.matchMedia;
+    try {
+      await openSimulator();
+      const group = (name: string) =>
+        screen.getByText(name, { selector: "summary" })
+          .parentElement as HTMLDetailsElement;
+      expect(group("Time horizon").open).toBe(true);
+      expect(group("Host populations").open).toBe(false);
+      expect(
+        screen.getByRole("button", { name: "Show results" }),
+      ).toBeDefined();
+    } finally {
+      window.matchMedia = original;
+    }
+  });
 });

@@ -20,10 +20,12 @@ import {
   buildParams,
   buildSpecies,
   derivedCattle,
+  formatCount,
   parametersCsv,
   parseForm,
   resultsCsv,
   runFmdScenario,
+  stabilityWarnings,
   toFormValues,
   type FmdInputs,
 } from "../src/fmd/model";
@@ -239,6 +241,62 @@ describe("FMD engine behaviour", () => {
       expect(Number.isFinite(result.R0)).toBe(true);
     }
   });
+
+  it("passes the numerical check for every legacy scenario and realistic input", () => {
+    for (const variant of golden.variants) {
+      const params = variant.params as FmdParams;
+      const core = simulateFmdCore(
+        params,
+        variant.species as Species,
+        variant.T,
+      );
+      expect(stabilityWarnings(core, params)).toEqual([]);
+    }
+    for (const inputs of [
+      DEFAULT_INPUTS,
+      { ...DEFAULT_INPUTS, days: 3650 },
+      {
+        ...DEFAULT_INPUTS,
+        level: "state" as const,
+        month: 11,
+        V_B10: 25000,
+        days: 400,
+      },
+      {
+        ...DEFAULT_INPUTS,
+        level: "farm" as const,
+        month: 1,
+        alpha_C: 1,
+        days: 365,
+      },
+    ])
+      expect(runFmdScenario(inputs).unstable).toBe(false);
+  });
+
+  it("flags results that the numerical check rejects", () => {
+    // Rates far above the form limits (as the legacy page allows): NaN and created animals.
+    const blowUp = runFmdScenario({
+      ...DEFAULT_INPUTS,
+      alpha_C1: 50,
+      gamma_1: 50,
+      theta: 50,
+      alpha_C: 1,
+    });
+    expect(blowUp.unstable).toBe(true);
+    expect(blowUp.warnings[0]).toMatch(/^Numerical instability: .*cattle/);
+    // Within the form limits: one buffalo against hundreds of infected cattle.
+    const tinyHerd = runFmdScenario({
+      ...DEFAULT_INPUTS,
+      Nb: 1,
+      I_B20: 0,
+      beta_B: 10,
+    });
+    expect(tinyHerd.unstable).toBe(true);
+    expect(tinyHerd.warnings[0]).toMatch(/buffalo total .* exceeds/);
+    expect(formatCount(NaN)).toBe("—");
+    expect(formatCount(Infinity)).toBe("—");
+    expect(formatCount(-0.4)).toBe("0");
+  });
 });
 
 describe("FMD form and exports", () => {
@@ -246,7 +304,16 @@ describe("FMD form and exports", () => {
     const values = toFormValues(DEFAULT_INPUTS);
     expect(parseForm(values, "district", 0).inputs).toEqual(DEFAULT_INPUTS);
     const invalid = parseForm(
-      { ...values, days: "5", beta_C: "abc", NC: "12.5", phi: "" },
+      {
+        ...values,
+        days: "5",
+        beta_C: "abc",
+        NC: "12.5",
+        phi: "",
+        E_C0: "136.6",
+        gamma_1: "50",
+        theta: "21",
+      },
       "district",
       0,
     );
@@ -256,7 +323,32 @@ describe("FMD form and exports", () => {
       beta_C: "Enter a number.",
       NC: "Enter a whole number.",
       phi: "Enter a number.",
+      E_C0: "Enter a whole number.",
+      gamma_1: "Must be between 0 and 1.",
+      theta: "Must be between 0 and 20.",
     });
+  });
+
+  it("keeps every compartment's linear outflow below one sub-step's capacity", () => {
+    // Largest per-day outflow allowed by the form limits must stay below 1/h = 100.
+    const max = (key: string) =>
+      FIELDS.find((f) => f.key === key)?.max ?? Infinity;
+    const outflows = {
+      V_C1:
+        max("alpha_C1") * max("gamma_1") +
+        max("alpha_C2") +
+        max("alpha_C3") +
+        max("mu_C"),
+      V_C2: max("chi_1") * max("gamma_2") + max("mu_C") + max("chi_2"),
+      Q_C: max("K_1") + max("K_2") + max("mu_C"),
+      I_C2: max("gamma_3") + max("mu_C") + max("phi") + max("D_C"),
+      E_C: max("rho_1") + max("mu_C"),
+      I_C1: max("mu_C") + max("sigma_1"),
+      R_C: max("mu_C") + max("theta"),
+      q_C: max("gamma_4") + max("mu_C"),
+    };
+    for (const [compartment, rate] of Object.entries(outflows))
+      expect([compartment, rate < 100]).toEqual([compartment, true]);
   });
 
   it("documents every editable field once", () => {

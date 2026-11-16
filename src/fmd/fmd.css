@@ -134,7 +134,7 @@
   width: 100%;
   min-height: 36px;
   padding: 6px 9px;
-  border: 1px solid #cfc9d9;
+  border: 1px solid #8a8496; /* 3.6:1 on white (WCAG 1.4.11) */
   border-radius: 6px;
   background: #fff;
   color: inherit;
@@ -184,6 +184,25 @@ summary:focus-visible {
   display: grid;
   gap: 18px;
   min-width: 0;
+}
+
+.fmd-results:focus {
+  outline: none;
+}
+
+.fmd-alert {
+  margin: 0;
+  padding: 12px 16px;
+  border: 1px solid #e4a3a3;
+  border-left: 4px solid #b42318;
+  border-radius: 8px;
+  background: #fff4f3;
+  color: #7f1d1d;
+  font-size: 13px;
+}
+
+.fmd-jump {
+  display: none;
 }
 
 .fmd-status {
@@ -297,9 +316,18 @@ summary:focus-visible {
   color: #3f3a4b;
 }
 
+/* Off state without element opacity, so text (5.5:1) and the focus ring keep full contrast. */
 .fmd-legend-item[aria-pressed="false"] {
-  opacity: 0.5;
+  color: var(--muted);
   text-decoration: line-through;
+}
+
+.fmd-legend-item[aria-pressed="false"] svg {
+  opacity: 0.35;
+}
+
+.fmd-chart-wrap {
+  width: 100%;
 }
 
 .fmd-chart {
@@ -340,7 +368,7 @@ summary:focus-visible {
   accent-color: var(--purple);
 }
 
-.fmd-cursor output {
+.fmd-day-readout {
   min-width: 64px;
   font-variant-numeric: tabular-nums;
 }
@@ -403,7 +431,7 @@ summary:focus-visible {
 
 .fmd-symbol {
   font-size: 10px;
-  color: #8a8496;
+  color: var(--muted);
   font-family: ui-monospace, Consolas, monospace;
 }
 
@@ -507,6 +535,12 @@ summary:focus-visible {
   .fmd-panel {
     position: static;
     max-height: none;
+  }
+  .fmd-panel-head {
+    flex-wrap: wrap;
+  }
+  .fmd-jump {
+    display: inline-flex;
   }
 }
 

@@ -8,6 +8,7 @@ import {
   simulateFmdCore,
   totalInfected,
   vaccinationImpact,
+  type Compartment,
   type ContactLevel,
   type CoreResult,
   type EnvironmentalFactor,
@@ -215,7 +216,12 @@ export const GROUP_LABELS: Record<FieldGroup, string> = {
   advanced: "Advanced cattle rates",
 };
 
-const RATE = { min: 0, max: 50, step: 0.0001 } as const;
+// Upper limits keep every compartment's total outflow below 1/h = 100 per day, so one
+// Euler sub-step can never move more animals out of a compartment than it holds (the
+// legacy page has no upper limits). Rates: ≤ 20/day; the four coefficients that are
+// multiplied together (α_C1·γ₁, χ₁·γ₂): ≤ 1 each.
+const RATE = { min: 0, max: 20, step: 0.0001 } as const;
+const COEFFICIENT = { min: 0, max: 1, step: 0.0001 } as const;
 
 export const FIELDS: readonly FieldSpec[] = [
   {
@@ -265,12 +271,14 @@ export const FIELDS: readonly FieldSpec[] = [
     integer: true,
     help: "Sheep and goat population (S_N). The legacy page uses 278,051 when this is 0.",
   },
+  // Whole numbers: the legacy page rounds these day-0 counts before running.
   {
     key: "V_C10",
     group: "cattle",
     label: "Vaccinated, fewer than 3 rounds (V_C1)",
     min: 0,
     step: 1,
+    integer: true,
     help: "Cattle vaccinated fewer than three times.",
   },
   {
@@ -279,6 +287,7 @@ export const FIELDS: readonly FieldSpec[] = [
     label: "Vaccinated, 3 or more rounds (V_C2)",
     min: 0,
     step: 1,
+    integer: true,
     help: "Cattle vaccinated three or more times. At district level they are also counted in R_C at day 0, as in the legacy page.",
   },
   {
@@ -287,6 +296,7 @@ export const FIELDS: readonly FieldSpec[] = [
     label: "Exposed (E_C)",
     min: 0,
     step: 1,
+    integer: true,
     help: "Latently infected cattle. The legacy page derives this from prevalence inputs that are not migrated yet.",
   },
   {
@@ -295,6 +305,7 @@ export const FIELDS: readonly FieldSpec[] = [
     label: "Asymptomatic infected (I_C1)",
     min: 0,
     step: 1,
+    integer: true,
     help: "Subclinically infected cattle. The legacy page derives this from prevalence inputs that are not migrated yet.",
   },
   {
@@ -303,6 +314,7 @@ export const FIELDS: readonly FieldSpec[] = [
     label: "Symptomatic infected (I_C2)",
     min: 0,
     step: 1,
+    integer: true,
     help: "Clinically infected cattle.",
   },
   {
@@ -311,6 +323,7 @@ export const FIELDS: readonly FieldSpec[] = [
     label: "Recovered, additional (R_C)",
     min: 0,
     step: 1,
+    integer: true,
     help: "Recovered cattle. At district level R_C at day 0 is V_C2 plus this value; at farm and state level it is this value.",
   },
   {
@@ -319,6 +332,7 @@ export const FIELDS: readonly FieldSpec[] = [
     label: "Infected buffalo (I_B)",
     min: 0,
     step: 1,
+    integer: true,
     help: "Infected buffalo at day 0.",
   },
   {
@@ -327,6 +341,7 @@ export const FIELDS: readonly FieldSpec[] = [
     label: "Infected pigs (I_P)",
     min: 0,
     step: 1,
+    integer: true,
     help: "Infected pigs at day 0.",
   },
   {
@@ -335,6 +350,7 @@ export const FIELDS: readonly FieldSpec[] = [
     label: "Infected sheep/goats (I_S)",
     min: 0,
     step: 1,
+    integer: true,
     help: "Infected sheep and goats at day 0.",
   },
   {
@@ -489,7 +505,7 @@ export const FIELDS: readonly FieldSpec[] = [
     max: 50,
     step: 0.1,
     unit: "°C",
-    help: "Optimum 20 °C in the environmental response; outside 0–60 °C its factor is 0.",
+    help: "Environmental response x²·√(60 − x): 1 at 20 °C, rising to its maximum at 48 °C; 0 at or below 0 °C.",
   },
   {
     key: "humidity",
@@ -499,7 +515,7 @@ export const FIELDS: readonly FieldSpec[] = [
     max: 100,
     step: 1,
     unit: "%",
-    help: "Optimum 60% in the environmental response.",
+    help: "Environmental response x²·√(100 − x): 1 at 60%, rising to its maximum at 80%; 0 at 0% and 100%.",
   },
   {
     key: "pH",
@@ -508,7 +524,7 @@ export const FIELDS: readonly FieldSpec[] = [
     min: 0,
     max: 14,
     step: 0.1,
-    help: "Optimum 7 in the environmental response.",
+    help: "Environmental response x²·√(14 − x): 1 at pH 7, rising to its maximum at pH 11.2; 0 at pH 0 and 14.",
   },
   {
     key: "F",
@@ -547,14 +563,14 @@ export const FIELDS: readonly FieldSpec[] = [
     key: "gamma_1",
     group: "advanced",
     label: "V_C1 immunity factor (γ₁)",
-    ...RATE,
+    ...COEFFICIENT,
     help: "V_C1 → R_C flows at α_C1·γ₁.",
   },
   {
     key: "gamma_2",
     group: "advanced",
     label: "V_C2 immunity factor (γ₂)",
-    ...RATE,
+    ...COEFFICIENT,
     help: "V_C2 → R_C flows at χ₁·γ₂.",
   },
   {
@@ -579,7 +595,7 @@ export const FIELDS: readonly FieldSpec[] = [
     label: "Loss of immunity (θ)",
     ...RATE,
     unit: "/day",
-    help: "R_C → S_C (not at farm level).",
+    help: "Leaves R_C at every level; returns to S_C except at farm level.",
   },
   {
     key: "delta_C",
@@ -595,7 +611,7 @@ export const FIELDS: readonly FieldSpec[] = [
     key: "alpha_C1",
     group: "advanced",
     label: "V_C1 → R_C coefficient (α_C1)",
-    ...RATE,
+    ...COEFFICIENT,
     help: "Multiplied by γ₁.",
   },
   {
@@ -618,7 +634,7 @@ export const FIELDS: readonly FieldSpec[] = [
     key: "chi_1",
     group: "advanced",
     label: "V_C2 → R_C coefficient (χ₁)",
-    ...RATE,
+    ...COEFFICIENT,
     help: "Multiplied by γ₂.",
   },
   {
@@ -635,7 +651,7 @@ export const FIELDS: readonly FieldSpec[] = [
     label: "Quarantine release (K₁)",
     ...RATE,
     unit: "/day",
-    help: "Q_C → S_C (not at farm level).",
+    help: "Leaves Q_C at every level; returns to S_C except at farm level.",
   },
   {
     key: "K_2",
@@ -824,6 +840,81 @@ export interface FmdScenarioResult {
   peak: { peak: number; peakDay: number };
   vaccination: VaccinationImpact;
   warnings: string[];
+  /** True when the numerical check failed; the results are then not reliable. */
+  unstable: boolean;
+}
+
+const HOST_COMPARTMENTS: readonly {
+  label: string;
+  compartments: readonly Compartment[];
+  /** Animals per day entering the host's compartments from outside the model. */
+  inflow: (p: FmdParams, recycle: number) => number;
+}[] = [
+  {
+    label: "cattle",
+    compartments: [
+      "S_C",
+      "E_C",
+      "I_C1",
+      "I_C2",
+      "R_C",
+      "V_C1",
+      "V_C2",
+      "Q_C",
+      "q_C",
+    ],
+    inflow: (p, recycle) => recycle * p.delta_C + p.delta_QC,
+  },
+  {
+    label: "buffalo",
+    compartments: ["S_B", "E_B", "I_B", "V_B1", "V_B2", "R_B"],
+    inflow: (p, recycle) => recycle * p.delta_B,
+  },
+  {
+    label: "pig",
+    compartments: ["S_P", "I_P", "V_P", "R_P"],
+    inflow: (p, recycle) => recycle * p.delta_P,
+  },
+  {
+    label: "sheep/goat",
+    compartments: ["S_S", "I_S", "V_S", "R_S"],
+    inflow: (p, recycle) => recycle * p.delta_S,
+  },
+];
+
+/**
+ * Numerical check of a run. With a stable Euler sub-step a host's total can only grow
+ * through recruitment and quarantine inflow. Growth beyond that (animals created when a
+ * sub-step overshoots and the compartment is clipped at 0) or non-finite values mean the
+ * results are numerical artefacts. Typical causes: very high rates, or a buffalo, pig or
+ * sheep/goat population that is tiny compared with the number of infected cattle.
+ */
+export function stabilityWarnings(core: CoreResult, p: FmdParams): string[] {
+  const recycle = p.contactMode === "farm" ? 0 : 1;
+  const warnings: string[] = [];
+  for (const host of HOST_COMPARTMENTS) {
+    const inflow = host.inflow(p, recycle);
+    const totalAt = (t: number) =>
+      host.compartments.reduce((sum, name) => sum + core.series[name][t], 0);
+    const initial = totalAt(0);
+    for (let t = 0; t < core.days; t++) {
+      const total = totalAt(t);
+      if (!Number.isFinite(total)) {
+        warnings.push(
+          `Numerical instability: ${host.label} values become undefined on day ${t}. These results are not reliable; lower the rates or check the populations.`,
+        );
+        break;
+      }
+      const limit = (initial + inflow * t) * (1 + 1e-9) + 1e-6;
+      if (total > limit) {
+        warnings.push(
+          `Numerical instability: on day ${t} the ${host.label} total (${formatCount(total)}) exceeds its day-0 total plus inflows (${formatCount(limit)}). These results are not reliable; lower the rates or check very small populations.`,
+        );
+        break;
+      }
+    }
+  }
+  return warnings;
 }
 
 export function runFmdScenario(inputs: FmdInputs): FmdScenarioResult {
@@ -836,7 +927,8 @@ export function runFmdScenario(inputs: FmdInputs): FmdScenarioResult {
     params.seasonFactor,
   );
   const infected = totalInfected(core.series);
-  const warnings: string[] = [];
+  const stability = stabilityWarnings(core, params);
+  const warnings: string[] = [...stability];
   const { cattleOverflow } = derivedCattle(inputs);
   if (cattleOverflow > 0)
     warnings.push(
@@ -878,6 +970,7 @@ export function runFmdScenario(inputs: FmdInputs): FmdScenarioResult {
       inputs.NC,
     ),
     warnings,
+    unstable: stability.length > 0,
   };
 }
 
@@ -933,8 +1026,10 @@ const countFormat = new Intl.NumberFormat("en-IN", {
   maximumFractionDigits: 0,
 });
 
+/** Whole animals in Indian digit grouping; "—" for values that are not finite. */
 export function formatCount(value: number): string {
-  return countFormat.format(Math.round(value || 0));
+  if (!Number.isFinite(value)) return "—";
+  return countFormat.format(Math.round(value) || 0);
 }
 
 export function resultsCsv(result: FmdScenarioResult): string {

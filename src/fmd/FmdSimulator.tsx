@@ -28,29 +28,49 @@ import {
 
 type SeriesKey = Compartment | "I_total";
 
-const SERIES: readonly {
-  key: SeriesKey;
-  label: string;
-  color: string;
-  dashed?: boolean;
-}[] = [
+// Colour plus line pattern, so series that look alike with colour-vision deficiency
+// (e.g. symptomatic cattle and buffalo) still differ.
+const SERIES: readonly (Omit<ChartSeries, "values"> & { key: SeriesKey })[] = [
   {
     key: "I_total",
     label: "All infected animals",
     color: "#1f2937",
-    dashed: true,
+    dash: "8 5",
+    width: 2.4,
   },
-  { key: "E_C", label: "Exposed cattle", color: "#d97706" },
+  { key: "E_C", label: "Exposed cattle", color: "#d97706", dash: "4 3" },
   { key: "I_C1", label: "Asymptomatic cattle", color: "#7c3aed" },
   { key: "I_C2", label: "Symptomatic cattle", color: "#dc2626" },
-  { key: "q_C", label: "Isolated cattle", color: "#be185d" },
-  { key: "I_B", label: "Infected buffalo", color: "#a16207" },
+  { key: "q_C", label: "Isolated cattle", color: "#be185d", dash: "6 2 1 2" },
+  {
+    key: "I_B",
+    label: "Infected buffalo",
+    color: "#a16207",
+    dash: "1 4",
+    linecap: "round",
+  },
   { key: "I_P", label: "Infected pigs", color: "#0891b2" },
-  { key: "I_S", label: "Infected sheep/goats", color: "#64748b" },
+  {
+    key: "I_S",
+    label: "Infected sheep/goats",
+    color: "#64748b",
+    dash: "9 3 2 3",
+  },
   { key: "S_C", label: "Susceptible cattle", color: "#2563eb" },
-  { key: "R_C", label: "Recovered cattle", color: "#16a34a" },
-  { key: "V_C1", label: "Vaccinated cattle (< 3 rounds)", color: "#0d9488" },
-  { key: "V_C2", label: "Vaccinated cattle (≥ 3 rounds)", color: "#065f46" },
+  { key: "R_C", label: "Recovered cattle", color: "#16a34a", dash: "12 4" },
+  {
+    key: "V_C1",
+    label: "Vaccinated cattle (< 3 rounds)",
+    color: "#0d9488",
+    dash: "4 3",
+  },
+  {
+    key: "V_C2",
+    label: "Vaccinated cattle (≥ 3 rounds)",
+    color: "#065f46",
+    dash: "1 4",
+    linecap: "round",
+  },
 ];
 const DEFAULT_VISIBLE: readonly SeriesKey[] = [
   "I_total",
@@ -126,6 +146,12 @@ const OPEN_BY_DEFAULT: readonly FieldGroup[] = [
   "transmission",
   "vaccination",
 ];
+// On narrow screens the panel sits above the results, so start with fewer groups open.
+const NARROW_QUERY = "(max-width: 1000px)";
+const isNarrowScreen = () =>
+  typeof window !== "undefined" &&
+  typeof window.matchMedia === "function" &&
+  window.matchMedia(NARROW_QUERY).matches;
 
 function seasonLabel(level: ContactLevel, month: number): string {
   if (month === 0) return MONTH_NAMES[0];
@@ -175,6 +201,12 @@ function NumberField({
         aria-invalid={error ? true : undefined}
         aria-describedby={`${id}-help${error ? ` ${id}-error` : ""}`}
         onChange={(event) => onChange(spec.key, event.target.value)}
+        // Chrome changes a focused number field on mouse-wheel; blur it so the wheel
+        // scrolls the panel instead of silently editing a model parameter.
+        onWheel={(event) => {
+          if (document.activeElement === event.currentTarget)
+            event.currentTarget.blur();
+        }}
       />
       <small id={`${id}-help`}>{spec.help}</small>
       {error && (
@@ -251,7 +283,11 @@ export default function FmdSimulator() {
   };
   const deferred = useDeferredValue(applied);
   const result = useMemo(() => runFmdScenario(deferred), [deferred]);
-  const updating = pending || deferred !== applied;
+  // Announce "Updating" only for real waits; short runs finish within a frame, and
+  // toggling the live region on every keystroke would make screen readers chatter.
+  const updating =
+    pending || (deferred !== applied && applied.days > LONG_RUN_DAYS);
+  const resultsRef = useRef<HTMLElement>(null);
 
   const [visible, setVisible] = useState<ReadonlySet<SeriesKey>>(
     () => new Set(DEFAULT_VISIBLE),
@@ -261,7 +297,7 @@ export default function FmdSimulator() {
   const day = Math.min(cursor, result.core.days - 1);
 
   const [openGroups, setOpenGroups] = useState<ReadonlySet<FieldGroup>>(
-    () => new Set(OPEN_BY_DEFAULT),
+    () => new Set(isNarrowScreen() ? ["horizon"] : OPEN_BY_DEFAULT),
   );
   const errorGroups = useMemo(
     () =>
@@ -320,6 +356,17 @@ export default function FmdSimulator() {
             <h2>Parameters</h2>
             <button type="button" className="button secondary" onClick={reset}>
               Reset to defaults
+            </button>
+            {/* Narrow screens only (CSS): results are below the whole panel there. */}
+            <button
+              type="button"
+              className="button primary fmd-jump"
+              onClick={() => {
+                resultsRef.current?.scrollIntoView({ block: "start" });
+                resultsRef.current?.focus({ preventScroll: true });
+              }}
+            >
+              Show results
             </button>
           </div>
           <fieldset className="fmd-group">
@@ -421,14 +468,25 @@ export default function FmdSimulator() {
           })}
         </aside>
 
-        <section className="fmd-results" aria-label="Simulation results">
+        <section
+          className="fmd-results"
+          aria-label="Simulation results"
+          ref={resultsRef}
+          tabIndex={-1}
+        >
           <div className="fmd-status" role="status" aria-live="polite">
             {errorCount > 0
-              ? `${errorCount} ${errorCount === 1 ? "value needs" : "values need"} correction. Results show the last valid inputs.`
+              ? `${errorCount} ${errorCount === 1 ? "value needs" : "values need"} correction. Results shown are for ${LEVEL_LABELS[result.inputs.level].toLowerCase()}, ${result.inputs.days} days.`
               : updating
                 ? "Updating results…"
                 : `Results for ${LEVEL_LABELS[result.inputs.level].toLowerCase()}, ${result.inputs.days} days.`}
           </div>
+          {result.unstable && (
+            <p className="fmd-alert" role="alert">
+              <strong>These results are not reliable.</strong> The numerical
+              check failed for the current inputs (see below).
+            </p>
+          )}
           {result.warnings.length > 0 && (
             <ul className="fmd-warnings">
               {result.warnings.map((warning) => (
@@ -506,12 +564,21 @@ export default function FmdSimulator() {
                   onClick={() => toggleSeries(s.key)}
                 >
                   <svg
-                    width="14"
-                    height="14"
+                    width="26"
+                    height="10"
                     aria-hidden="true"
                     focusable="false"
                   >
-                    <rect width="14" height="14" rx="3" fill={s.color} />
+                    <line
+                      x1="2"
+                      y1="5"
+                      x2="24"
+                      y2="5"
+                      stroke={s.color}
+                      strokeWidth="3"
+                      strokeDasharray={s.dash}
+                      strokeLinecap={s.linecap ?? "butt"}
+                    />
                   </svg>
                   {s.label}
                 </button>
@@ -533,9 +600,14 @@ export default function FmdSimulator() {
                 min={0}
                 max={result.core.days - 1}
                 value={day}
+                aria-valuetext={`Day ${day}`}
                 onChange={(event) => setCursor(Number(event.target.value))}
               />
-              <output htmlFor="fmd-day">Day {day}</output>
+              {/* Visual readout only: an <output> is an implicit live region and would
+                  repeat the value the slider already announces. */}
+              <span className="fmd-day-readout" aria-hidden="true">
+                Day {day}
+              </span>
               <button
                 type="button"
                 className="button secondary"
@@ -566,7 +638,7 @@ export default function FmdSimulator() {
                 <strong>{formatCount(flowsAtDay.deaths)}</strong>
               </p>
               <p>
-                Cattle vaccinated so far:{" "}
+                Vaccinations given so far (incl. day-0 stock):{" "}
                 <strong>{formatCount(flowsAtDay.vaccinated)}</strong>
               </p>
             </div>
@@ -601,7 +673,10 @@ export default function FmdSimulator() {
             </h2>
             <p className="fmd-muted">
               Compares the current settings with no vaccination at all and with
-              the day-0 vaccinated stock only (α_C = 0).
+              the day-0 vaccinated stock only (α_C = 0). Vaccinations are
+              counted cumulatively: an animal vaccinated again after its
+              protection wanes is counted again, so the total can exceed the
+              herd.
             </p>
             <dl className="fmd-facts">
               <div>
@@ -629,11 +704,11 @@ export default function FmdSimulator() {
                 <dd>{formatCount(impact.fromCampaign)}</dd>
               </div>
               <div>
-                <dt>Cattle vaccinated</dt>
+                <dt>Vaccinations given (cumulative, incl. day-0 stock)</dt>
                 <dd>{formatCount(impact.vaccinated)}</dd>
               </div>
               <div>
-                <dt>Vaccinated per infection averted</dt>
+                <dt>Vaccinations per infection averted</dt>
                 <dd>
                   {impact.numberNeededToVaccinate === null
                     ? "—"

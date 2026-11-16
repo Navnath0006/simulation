@@ -74,9 +74,11 @@ export default function FmdModel() {
           s), where s is the monthly index of the selected level (no
           seasonality: s = 1 at farm level, 0 otherwise). <strong>r</strong> is
           0 at farm level (closed outbreak) and 1 otherwise.{" "}
-          <strong>F_env</strong> is the product of cardinal temperature (0, 20,
-          60 °C), humidity (0, 60, 100%) and pH (0, 7, 14) responses, limited to
-          0–2.
+          <strong>F_env</strong> is the product of temperature, humidity and pH
+          responses of the form x²·√(x_max − x), each normalised to 1 at 20 °C,
+          60% and pH 7. They rise to their maxima at 48 °C, 80% and pH 11.2 and
+          fall to 0 at 60 °C, 100% and pH 14 (and are 0 at or below 0). The
+          product is limited to 0–2.
         </p>
       </section>
 
@@ -196,15 +198,25 @@ export default function FmdModel() {
         <ul className="fmd-list">
           <li>
             R₀ treats a zero input as its default (for example β_C = 0 is
-            calculated as 0.26, F = 0 as 1), uses the total population of all
-            species for the cattle fraction, and leaves out pigs and
+            calculated as 0.26, F = 0 as 1), divides day-0 susceptible cattle by
+            the total population N of all species, and leaves out pigs and
             sheep/goats.
           </li>
           <li>
-            Fixed day-0 values: quarantined cattle 1, isolated cattle 416,
-            vaccinated and recovered pigs 1 each, vaccinated sheep/goats 3,
-            recovered sheep/goats 8; 2% of susceptible buffalo are exposed even
-            when no animal is infected.
+            Total population N: this page always uses the sum of the four
+            populations, as the legacy page does when it first loads. After any
+            population or day-0 infected count is edited, the legacy page
+            instead recalculates N as the populations minus day-0 exposed and
+            infected animals, so its R₀ and results can then differ slightly
+            (about 0.03% with the defaults, more than 10% for small herds).
+          </li>
+          <li>
+            At farm and district level, fixed day-0 values: quarantined cattle
+            1, isolated cattle 416, vaccinated and recovered pigs 1 each,
+            vaccinated sheep/goats 3, recovered sheep/goats 8. State level
+            instead starts these at 0 (vaccinated pigs and sheep/goats at the
+            entered values). At every level 2% of susceptible buffalo are
+            exposed even when no animal is infected.
           </li>
           <li>
             At district level, V_C2 is counted both as vaccinated and as
@@ -212,9 +224,14 @@ export default function FmdModel() {
           </li>
           <li>
             Some outflows leave the model rather than moving to another
-            compartment (δ_P and δ_S from vaccinated pigs and sheep/goats, α_B1
-            and χ_B from vaccinated buffalo), and clipping at 0 does not
-            conserve animals.
+            compartment: δ_P and δ_S from vaccinated pigs and sheep/goats, α_B1
+            and χ_B from vaccinated buffalo, and at farm level also θ, K₁, α_C3
+            and χ₂ (which return animals to S_C at other levels). Clipping at 0
+            does not conserve animals.
+          </li>
+          <li>
+            The environmental response calls 20 °C, 60% humidity and pH 7 its
+            optima, but its formula is largest at 48 °C, 80% and pH 11.2.
           </li>
           <li>
             An empty buffalo, pig or sheep/goat population is replaced by
