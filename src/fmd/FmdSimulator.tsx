@@ -1,4 +1,4 @@
-import { useDeferredValue, useMemo, useState } from "react";
+import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import EpidemicChart, { type ChartSeries } from "./EpidemicChart";
 import {
   isAdditiveSeason,
@@ -218,6 +218,9 @@ const DEFAULT_FORM: FormState = {
   month: DEFAULT_INPUTS.month,
   values: toFormValues(DEFAULT_INPUTS),
 };
+/** Longer horizons take noticeable time (≈0.5 s for 3,650 days), so wait for a pause in typing. */
+const LONG_RUN_DAYS = 1000;
+const LONG_RUN_DELAY_MS = 400;
 
 export default function FmdSimulator() {
   const [form, setForm] = useState<FormState>(DEFAULT_FORM);
@@ -228,14 +231,27 @@ export default function FmdSimulator() {
   );
   // Results always come from the last valid set of inputs.
   const [applied, setApplied] = useState<FmdInputs>(DEFAULT_INPUTS);
+  const [pending, setPending] = useState(false);
+  const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  useEffect(() => () => clearTimeout(timer.current), []);
   const updateForm = (next: FormState) => {
     setForm(next);
-    const checked = parseForm(next.values, next.level, next.month);
-    if (checked.inputs) setApplied(checked.inputs);
+    clearTimeout(timer.current);
+    const checked = parseForm(next.values, next.level, next.month).inputs;
+    if (!checked || checked.days <= LONG_RUN_DAYS) {
+      setPending(false);
+      if (checked) setApplied(checked);
+      return;
+    }
+    setPending(true);
+    timer.current = setTimeout(() => {
+      setPending(false);
+      setApplied(checked);
+    }, LONG_RUN_DELAY_MS);
   };
   const deferred = useDeferredValue(applied);
   const result = useMemo(() => runFmdScenario(deferred), [deferred]);
-  const updating = deferred !== applied;
+  const updating = pending || deferred !== applied;
 
   const [visible, setVisible] = useState<ReadonlySet<SeriesKey>>(
     () => new Set(DEFAULT_VISIBLE),

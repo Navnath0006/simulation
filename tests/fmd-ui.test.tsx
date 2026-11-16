@@ -224,4 +224,17 @@ describe("FMD simulator", () => {
     render(<App />);
     expect(await screen.findByLabelText("Simulation parameters")).toBeDefined();
   });
+
+  it("waits for a pause in typing before recalculating long horizons", async () => {
+    await openSimulator();
+    setValue(/Simulation days/, "3650");
+    expect(screen.getByText("Updating results…")).toBeDefined();
+    await waitFor(
+      () =>
+        expect(
+          screen.getByText("Results for district level, 3650 days."),
+        ).toBeDefined(),
+      { timeout: 8000 },
+    );
+  });
 });
